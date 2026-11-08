@@ -1,0 +1,105 @@
+=====================
+Benchmarking ciso8601
+=====================
+
+.. contents:: Contents
+
+Introduction
+------------
+
+``ciso8601``'s goal is to be the world's fastest ISO 8601 datetime parser for Python.
+
+In order to see how we compare, we run benchmarks against each other known ISO 8601 parser.
+
+**Note:** We only run benchmarks against open-source parsers that are published as part of Python modules on `PyPI`_.
+
+.. _`PyPI`: https://pypi.org/
+
+Quick start: Running the standard benchmarks
+--------------------------------------------
+
+If you just want to run the standard benchmarks we run for each release, there is a convenience script.
+
+.. code:: bash
+
+  % python -m venv env
+  % source env/bin/activate
+  % pip install -r requirements.txt
+  % ./run_benchmarks.sh
+
+This runs the benchmarks and generates reStructuredText files. The contents of these files are then automatically copy-pasted into ciso8601's `README.rst`_.
+
+.. _`README.rst`: https://github.com/closeio/ciso8601/blob/master/README.rst
+
+Running benchmarks for all Python versions
+------------------------------------------
+
+To make it easier to run the benchmarks for all supported Python versions, there is a Dockerfile you can build:
+
+.. code:: bash
+
+  % docker build -t ciso8601_benchmarking .
+  % docker run -it --rm=true -v $(dirname `pwd`):/ciso8601 ciso8601_benchmarking
+
+Running custom benchmarks
+-------------------------
+
+Running a custom benchmark is done by supplying `tox`_ with your custom timestamp:
+
+.. code:: bash
+
+  % python -m venv env
+  % source env/bin/activate
+  % pip install -r requirements.txt
+  % tox '2014-01-09T21:48:00'
+
+It calls `perform_comparison.py`_ in each of the supported Python interpreters on your machine.
+This in turn calls `timeit`_ for each of the modules defined in ``ISO_8601_MODULES``.
+
+.. _`tox`: https://tox.readthedocs.io/en/latest/index.html
+.. _`timeit`: https://docs.python.org/3/library/timeit.html
+
+Results are dumped into a collection of CSV files (in the ``benchmark_results`` directory by default).
+
+These CSV files can then formatted into reStructuredText tables by `format_results.py`_:
+
+.. _`perform_comparison.py`: https://github.com/closeio/ciso8601/blob/master/benchmarking/perform_comparison.py
+.. _`format_results.py`: https://github.com/closeio/ciso8601/blob/master/benchmarking/format_results.py
+
+.. code:: bash
+
+  % cd benchmarking
+  % python format_results.py benchmark_results/2014-01-09T214800 benchmark_results/benchmark_with_no_time_zone.rst
+  % python format_results.py benchmark_results/2014-01-09T214800-0530 benchmark_results/benchmark_with_time_zone.rst
+
+Disclaimer
+-----------
+
+Because of the way that ``tox`` works (and the way the benchmark is structured more generally), it doesn't make sense to compare the results for a given module across different Python versions.
+Comparisons between modules within the same Python version are still valid, and indeed, are the goal of the benchmarks.
+
+Caching
+-------
+
+`ciso8601` caches the ``tzinfo`` objects it creates, allowing it to reuse those objects for faster creation of subsequent ``datetime`` objects.
+For example, for some types of profiling, it makes sense not to have a cache.
+Caching can be disabled by modifying the `tox.ini`_ and changing ``CISO8601_CACHING_ENABLED`` to ``0``.
+
+.. _`tox.ini`: https://github.com/closeio/ciso8601/blob/master/benchmarking/tox.ini
+
+FAQs
+----
+
+"What about <missing module>?"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We only run benchmarks against open-source parsers that are published as part of Python modules on PyPI.
+
+Do you know of a competing module missing from these benchmarks? We made it easy to add additional modules to our benchmarking:
+
+1. Add the dependency to ``tox.ini``
+1. Add the import statement and the parse statement for the module to ``ISO_8601_MODULES`` in `perform_comparison.py`_
+
+`Submit a pull request`_ and we'll probably add it to our official benchmarks.
+
+.. _`Submit a pull request`: https://github.com/closeio/ciso8601/blob/master/CONTRIBUTING.md
